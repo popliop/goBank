@@ -8,20 +8,28 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
-}
-
-type ApiError struct {
-	Error string
-}
-
+// 1. Struct and Constructor
 type APIServer struct {
 	listenAddr string
 }
 
+func NewAPIServer(listenAddr string) *APIServer {
+	return &APIServer{
+		listenAddr: listenAddr,
+	}
+}
+
+// 2. Public Method
+func (s *APIServer) Run() {
+	router := mux.NewRouter()
+
+	router.HandleFunc("/account", handleWrapper(s.handleAccount))
+
+	fmt.Println("JSON API server running on port: ", s.listenAddr)
+	http.ListenAndServe(s.listenAddr, router)
+}
+
+// 3. Wrapper Function
 type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 func handleWrapper(f apiFunc) http.HandlerFunc {
@@ -32,21 +40,7 @@ func handleWrapper(f apiFunc) http.HandlerFunc {
 	}
 }
 
-func NewAPIServer(listenAddr string) *APIServer {
-	return &APIServer{
-		listenAddr: listenAddr,
-	}
-}
-
-func (s *APIServer) Run() {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/account", handleWrapper(s.handleAccount))
-
-	fmt.Println("JSON API server running on port: ", s.listenAddr)
-	http.ListenAndServe(s.listenAddr, router)
-}
-
+// 4. Handlers
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccount(w, r)
@@ -75,4 +69,15 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
 	return nil
+}
+
+// 5. Helper Functions
+type ApiError struct {
+	Error string
+}
+
+func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(v)
 }
