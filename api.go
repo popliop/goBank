@@ -6,16 +6,19 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 // 1. Struct and Constructor
 type APIServer struct {
 	listenAddr string
+	store      Storage
 }
 
-func NewAPIServer(listenAddr string) *APIServer {
+func NewAPIServer(listenAddr string, store Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
+		store:      store,
 	}
 }
 
@@ -40,7 +43,7 @@ func handleWrapper(f apiFunc) http.HandlerFunc {
 	}
 }
 
-// 4. Handlers
+// 4. methods
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccount(w, r)
@@ -52,15 +55,29 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 		return s.handleDeleteAccount(w, r)
 	}
 	return fmt.Errorf("method not allowed %s", r.Method)
+
 }
 
-func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+// Handlers
+func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
 	account := NewAccount("Marcus", "Sormvall")
+
+	//query := `SELECT * FROM account`
 	return WriteJSON(w, http.StatusOK, account)
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	createAccountReq := &CreateAccountRequest{}
+	if err := json.NewDecoder(r.Body).Decode(createAccountReq); err != nil {
+		return err
+	}
+
+	account := NewAccount(createAccountReq.Firstname, createAccountReq.LastName)
+	if err := s.store.CreateAcount(account); err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, account)
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
