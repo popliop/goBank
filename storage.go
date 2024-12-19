@@ -9,7 +9,7 @@ import (
 )
 
 type Storage interface {
-	CreateAcount(*Account) error
+	CreateAccount(*Account) error
 	DeleteAccount(int) error
 	GetAccountByID(int) (*Account, error)
 	GetAccounts() ([]*Account, error)
@@ -29,10 +29,9 @@ var (
 )
 
 func NewPostgressStorage() (*PostgreStorage, error) {
-
+	//postgres://postgres:gobank@localhost:5432/postgres
 	//connStr := "user=postgres dbname=postgres password=gobank sslmode=disable"
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, dbname, sslmode)
-	//postgres://postgres:gobank@localhost:5432/postgres
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -68,7 +67,7 @@ func (s *PostgreStorage) createAccountTable() error {
 }
 
 // Handlers
-func (s *PostgreStorage) CreateAcount(acc *Account) error {
+func (s *PostgreStorage) CreateAccount(acc *Account) error {
 
 	query := `INSERT INTO account 
 	(first_name, last_name, number, balance, created_at)
@@ -98,13 +97,23 @@ func (s *PostgreStorage) DeleteAccount(id int) error {
 }
 
 func (s *PostgreStorage) GetAccountByID(id int) (*Account, error) {
-	return nil, nil
+	query := `SELECT * FROM account where id = $1`
+
+	rows, err := s.db.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanRowAccount(rows)
+	}
+
+	return nil, fmt.Errorf("Account %d not found", id)
 }
 
-func (s *PostgreStorage) GetAccount(id int) ([]*Account, error) {
+func (s *PostgreStorage) GetAccounts() ([]*Account, error) {
 
-	query := `SELECT * FROM acounts`
-
+	query := `SELECT * FROM account`
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -112,20 +121,26 @@ func (s *PostgreStorage) GetAccount(id int) ([]*Account, error) {
 
 	accounts := []*Account{}
 	for rows.Next() {
-		account := new(Account)
-		err := rows.Scan(
-			&account.ID,
-			&account.Firstname,
-			&account.LastName,
-			&account.Number,
-			&account.Balance,
-			&account.Createdtime)
-
+		account, err := scanRowAccount(rows)
 		if err != nil {
 			return nil, err
 		}
-
 		accounts = append(accounts, account)
 	}
+
 	return accounts, nil
+}
+
+func scanRowAccount(rows *sql.Rows) (*Account, error) {
+
+	account := Account{}
+	err := rows.Scan(
+		&account.ID,
+		&account.Firstname,
+		&account.LastName,
+		&account.Number,
+		&account.Balance,
+		&account.Createdtime)
+
+	return &account, err
 }

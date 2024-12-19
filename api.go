@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/joho/godotenv/autoload"
@@ -27,6 +28,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", handleWrapper(s.handleAccount))
+	router.HandleFunc("/account/{id}", handleWrapper(s.handleGetAccountByID))
 
 	fmt.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
@@ -51,19 +53,39 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	if r.Method == "POST" {
 		return s.handleCreateAccount(w, r)
 	}
-	if r.Method == "DELETE" {
+	/* if r.Method == "DELETE" {
 		return s.handleDeleteAccount(w, r)
-	}
+	} */
 	return fmt.Errorf("method not allowed %s", r.Method)
 
 }
 
 // Handlers
 func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
-	account := NewAccount("Marcus", "Sormvall")
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return fmt.Errorf("invalid id given %s", idStr)
+	}
 
-	//query := `SELECT * FROM account`
+	account, err := s.store.GetAccountByID(id)
+	if err != nil {
+		return err
+	}
+
 	return WriteJSON(w, http.StatusOK, account)
+}
+
+func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+	accounts, err := s.store.GetAccounts()
+	if err != nil {
+		return err
+	}
+
+	if r != nil {
+	}
+
+	return WriteJSON(w, http.StatusOK, accounts)
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
@@ -73,20 +95,20 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	account := NewAccount(createAccountReq.Firstname, createAccountReq.LastName)
-	if err := s.store.CreateAcount(account); err != nil {
+	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
 
 	return WriteJSON(w, http.StatusOK, account)
 }
 
-func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
+/* func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
 	return nil
-}
+} */
 
 // 5. Helper Functions
 type ApiError struct {
