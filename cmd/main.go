@@ -6,8 +6,8 @@ import (
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/popliop/gobank/cmd/server"
-	"github.com/popliop/gobank/cmd/server/database"
+	"github.com/popliop/gobank/pkg/database"
+	"github.com/popliop/gobank/pkg/server"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/popliop/gobank/cmd/server/database"
+	"github.com/popliop/gobank/pkg/database"
 )
 
 type APIServer struct {

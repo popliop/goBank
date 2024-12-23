@@ -6,7 +6,7 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	"github.com/popliop/gobank/cmd/types"
+	"github.com/popliop/gobank/pkg/types"
 )
 
 type Storage interface {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/popliop/gobank/cmd/types"
-	"github.com/popliop/gobank/cmd/utils"
+	"github.com/popliop/gobank/pkg/types"
+	"github.com/popliop/gobank/pkg/utils"
 )
 
 // Wrapper Function
@@ -49,7 +49,7 @@ func (s *APIServer) handleAccountByID(w http.ResponseWriter, r *http.Request) er
 }
 
 // GET /account
-func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleGetAccount(w http.ResponseWriter, _ *http.Request) error {
 	accounts, err := s.store.GetAccounts()
 	if err != nil {
 		return err
