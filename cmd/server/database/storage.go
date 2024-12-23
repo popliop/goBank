@@ -1,4 +1,4 @@
-package storage
+package database
 
 import (
 	"database/sql"
@@ -6,32 +6,40 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/popliop/gobank/cmd/types"
 )
 
 type Storage interface {
-	CreateAccount(*Account) error
+	CreateAccount(*types.Account) error
 	DeleteAccount(int) error
-	GetAccountByID(int) (*Account, error)
-	GetAccounts() ([]*Account, error)
+	GetAccountByID(int) (*types.Account, error)
+	GetAccounts() ([]*types.Account, error)
 }
 
 type PostgreStorage struct {
 	db *sql.DB
 }
 
-var (
-	user     = os.Getenv("DB_USERNAME")
-	password = os.Getenv("DB_PASSWORD")
-	host     = os.Getenv("SERVER_HOST")
-	port     = os.Getenv("DB_PORT")
-	dbname   = os.Getenv("DB_NAME")
-	sslmode  = os.Getenv("DB_SSLMODE")
-)
+func loadDBConfig() (string, error) {
+	user := os.Getenv("DB_USERNAME")
+	password := os.Getenv("DB_PASSWORD")
+	host := os.Getenv("SERVER_HOST")
+	port := os.Getenv("DB_PORT")
+	dbname := os.Getenv("DB_NAME")
+	sslmode := os.Getenv("DB_SSLMODE")
+
+	if user == "" || password == "" || host == "" || port == "" || dbname == "" || sslmode == "" {
+		return "", fmt.Errorf("missing required database environment variables")
+	}
+
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, dbname, sslmode), nil
+}
 
 func NewPostgressStorage() (*PostgreStorage, error) {
-	//postgres://postgres:gobank@localhost:5432/postgres
-	//connStr := "user=postgres dbname=postgres password=gobank sslmode=disable"
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, dbname, sslmode)
+	connStr, err := loadDBConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -42,10 +50,7 @@ func NewPostgressStorage() (*PostgreStorage, error) {
 		return nil, err
 	}
 
-	return &PostgreStorage{
-		db: db,
-	}, nil
-
+	return &PostgreStorage{db: db}, nil
 }
 
 func (s *PostgreStorage) Init() error {
@@ -67,7 +72,7 @@ func (s *PostgreStorage) createAccountTable() error {
 }
 
 // Handlers
-func (s *PostgreStorage) CreateAccount(acc *Account) error {
+func (s *PostgreStorage) CreateAccount(acc *types.Account) error {
 
 	query := `INSERT INTO account 
 	(first_name, last_name, number, balance, created_at)
@@ -79,7 +84,7 @@ func (s *PostgreStorage) CreateAccount(acc *Account) error {
 		acc.LastName,
 		acc.Number,
 		acc.Balance,
-		acc.Createdtime)
+		acc.CreatedTime)
 
 	if err != nil {
 		return err
@@ -88,7 +93,7 @@ func (s *PostgreStorage) CreateAccount(acc *Account) error {
 	return nil
 }
 
-func (s *PostgreStorage) UpdateAccount(*Account) error {
+func (s *PostgreStorage) UpdateAccount(*types.Account) error {
 	return nil
 }
 
@@ -103,7 +108,7 @@ func (s *PostgreStorage) DeleteAccount(id int) error {
 	return nil
 }
 
-func (s *PostgreStorage) GetAccountByID(id int) (*Account, error) {
+func (s *PostgreStorage) GetAccountByID(id int) (*types.Account, error) {
 	query := `SELECT * FROM account where id = $1`
 	fmt.Println("id", id)
 	rows, err := s.db.Query(query, id)
@@ -115,10 +120,10 @@ func (s *PostgreStorage) GetAccountByID(id int) (*Account, error) {
 		return scanRowAccount(rows)
 	}
 
-	return nil, fmt.Errorf("Account %d not found", id)
+	return nil, fmt.Errorf("account %d not found", id)
 }
 
-func (s *PostgreStorage) GetAccounts() ([]*Account, error) {
+func (s *PostgreStorage) GetAccounts() ([]*types.Account, error) {
 
 	query := `SELECT * FROM account ORDER BY id`
 	rows, err := s.db.Query(query)
@@ -126,7 +131,7 @@ func (s *PostgreStorage) GetAccounts() ([]*Account, error) {
 		return nil, err
 	}
 
-	accounts := []*Account{}
+	accounts := []*types.Account{}
 	for rows.Next() {
 		account, err := scanRowAccount(rows)
 		if err != nil {
@@ -138,16 +143,16 @@ func (s *PostgreStorage) GetAccounts() ([]*Account, error) {
 	return accounts, nil
 }
 
-func scanRowAccount(rows *sql.Rows) (*Account, error) {
+func scanRowAccount(rows *sql.Rows) (*types.Account, error) {
 
-	account := Account{}
+	account := types.Account{}
 	err := rows.Scan(
 		&account.ID,
 		&account.Firstname,
 		&account.LastName,
 		&account.Number,
 		&account.Balance,
-		&account.Createdtime)
+		&account.CreatedTime)
 
 	return &account, err
 }

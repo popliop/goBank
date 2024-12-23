@@ -5,14 +5,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/popliop/gobank/cmd/server/database"
 )
 
 type APIServer struct {
 	listenAddr string
-	store      Storage
+	store      database.Storage
 }
 
-func NewAPIServer(listenAddr string, store Storage) *APIServer {
+func NewAPIServer(listenAddr string, store database.Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
 		store:      store,

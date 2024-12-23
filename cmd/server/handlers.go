@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/popliop/gobank/types"
-	"github.com/popliop/gobank/utils"
+	"github.com/popliop/gobank/cmd/types"
+	"github.com/popliop/gobank/cmd/utils"
 )
 
 // Wrapper Function

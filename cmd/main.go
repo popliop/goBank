@@ -6,11 +6,13 @@ import (
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/popliop/gobank/cmd/server"
+	"github.com/popliop/gobank/cmd/server/database"
 )
 
 func main() {
 
-	store, err := NewPostgressStorage()
+	store, err := database.NewPostgressStorage()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,7 +21,7 @@ func main() {
 		log.Fatal("Storage init failed", err)
 	}
 
-	server := NewAPIServer(os.Getenv("SERVER_PORT"), store)
+	server := server.NewAPIServer(os.Getenv("SERVER_PORT"), store)
 	server.Run()
 
 }
